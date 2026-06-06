@@ -6,20 +6,176 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .projects-layout { display: flex; gap: 1.5rem; flex-wrap: wrap; }
-    .domains-panel { flex: 1.2; background: var(--color-surface); border-radius: var(--radius-lg); border: 1px solid var(--color-border); padding: 1rem; }
-    .kanban-panel { flex: 2.5; background: var(--color-surface); border-radius: var(--radius-lg); border: 1px solid var(--color-border); padding: 1rem; }
-    .detail-panel { flex: 1.5; background: var(--color-surface); border-radius: var(--radius-lg); border: 1px solid var(--color-border); padding: 1rem; max-height: 70vh; overflow-y: auto; }
-    .kanban-columns { display: flex; flex-direction: column; gap: 1rem; }
-    .kanban-col { background: #faf8f4; border-radius: var(--radius-md); padding: 0.75rem; border: 1px solid var(--color-border-light); }
-    .project-card { background: white; border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 0.6rem; margin-bottom: 0.6rem; cursor: pointer; }
+    /* Projects page specific styles – fully integrated with theme */
+    .projects-header { margin-bottom: 1.5rem; }
+    .stats-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; }
+    .stat-badge {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      padding: 0.75rem 1.25rem;
+      border: 1px solid var(--color-border);
+      flex: 1;
+      min-width: 100px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .stat-badge:hover { transform: translateY(-2px); border-color: var(--color-primary-soft); }
+    .stat-number { font-size: 1.4rem; font-weight: 700; color: var(--color-primary); }
+    
+    /* Three‑column layout */
+    .projects-layout {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .domains-panel {
+      flex: 1.2;
+      min-width: 240px;
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border);
+      padding: 1rem;
+      align-self: start;
+      box-shadow: var(--shadow-sm);
+    }
+    .kanban-panel {
+      flex: 2.5;
+      min-width: 320px;
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border);
+      padding: 1rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .detail-panel {
+      flex: 1.5;
+      min-width: 280px;
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border);
+      padding: 1rem;
+      align-self: start;
+      max-height: 70vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-sm);
+    }
+    .domain-group { margin-bottom: 1.5rem; }
+    .domain-title {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      color: var(--color-text);
+    }
+    .group-list { list-style: none; margin-left: 1rem; }
+    .group-item {
+      padding: 0.4rem 0.4rem 0.4rem 1rem;
+      margin-bottom: 0.25rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      color: var(--color-text-secondary);
+      transition: all 0.2s;
+    }
+    .group-item.active { background: rgba(180,83,9,0.1); border-left: 3px solid var(--color-primary); color: var(--color-primary); font-weight: 500; }
+    .group-item:hover { background: rgba(180,83,9,0.05); transform: translateX(4px); }
+    .badge-count {
+      background: var(--color-border-light);
+      padding: 0.1rem 0.5rem;
+      border-radius: 30px;
+      font-size: 0.7rem;
+      color: var(--color-text-muted);
+    }
+    
+    /* Kanban – vertical stacked columns (no horizontal scroll) */
+    .kanban-columns {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .kanban-col {
+      background: #faf8f4;
+      border-radius: var(--radius-md);
+      padding: 0.75rem;
+      border: 1px solid var(--color-border-light);
+    }
+    .col-title {
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--color-text-secondary);
+    }
+    .project-card {
+      background: white;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem;
+      margin-bottom: 0.6rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .project-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); border-color: var(--color-primary); }
     .project-card.selected { border-color: var(--color-primary); background: rgba(180,83,9,0.05); }
-    .add-btn { background: none; border: none; color: var(--color-primary); cursor: pointer; }
-    .member-chip { background: #f0ede8; border-radius: 30px; padding: 0.2rem 0.6rem; display: inline-block; margin: 0.2rem; font-size: 0.7rem; }
-    .edit-field { width: 100%; padding: 0.3rem; border-radius: 6px; border: 1px solid var(--color-border); margin-top: 0.2rem; }
-    .back-btn { background: var(--color-primary); color: white; border: none; padding: 0.3rem 0.8rem; border-radius: 40px; cursor: pointer; }
-    .task-item-proj { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-    .done { text-decoration: line-through; color: var(--color-text-muted); }
+    .project-title { font-weight: 600; font-size: 0.85rem; color: var(--color-text); }
+    .project-meta { font-size: 0.7rem; color: var(--color-text-muted); margin-top: 0.25rem; }
+    
+    /* Detail panel styles */
+    .detail-section { margin-top: 1.2rem; }
+    .detail-section h4 {
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+      border-bottom: 1px solid var(--color-border);
+      padding-bottom: 0.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--color-text);
+    }
+    .edit-field {
+      width: 100%;
+      padding: 0.4rem;
+      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: inherit;
+      font-size: 0.85rem;
+    }
+    .task-item, .event-item, .file-item {
+      font-size: 0.75rem;
+      padding: 0.4rem 0;
+      border-bottom: 1px dashed var(--color-border-light);
+      display: flex;
+      justify-content: space-between;
+      color: var(--color-text-secondary);
+    }
+    .member-chip {
+      background: #f0ede8;
+      border-radius: 30px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.7rem;
+      display: inline-block;
+      margin: 0.2rem;
+      color: var(--color-text);
+    }
+    .add-btn {
+      background: none;
+      border: none;
+      color: var(--color-primary);
+      cursor: pointer;
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+    .add-btn:hover { text-decoration: underline; }
+    .empty-message { color: var(--color-text-muted); font-style: italic; font-size: 0.7rem; margin-top: 0.3rem; }
+    .back-btn { background: var(--color-primary); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 40px; font-size: 0.75rem; cursor: pointer; width: 100%; margin-top: 0.5rem; }
+    .back-btn:hover { background: var(--color-accent); }
+    @media (max-width: 1000px) { .projects-layout { flex-direction: column; } .detail-panel { max-height: none; } }
   </style>
 </head>
 <body>
@@ -27,265 +183,70 @@
   <nav class="top-nav"><div class="logo">Arcana</div><div class="nav-links">
     <a href="home.html">Home</a><a href="projects.html" class="active">Projects</a><a href="tasks.html">Tasks</a><a href="calendar.html">Calendar</a><a href="learning.html">Learning</a><a href="library.html">Library</a>
   </div></nav>
-  <main class="main-content">
-    <h2>Projects Hub</h2>
-    <div class="projects-layout" id="projects-layout"></div>
-  </main>
+  <main class="main-content"><h2>Projects Hub</h2><div class="projects-layout" id="projects-layout"></div></main>
 </div>
 <script>
-  // ======================== API CONFIGURATION ========================
-  const API_URL = 'https://script.google.com/macros/s/AKfycbyBIhy8vZYt8PtmIvToJfcZGbeL0vTEdwi3SkLD2p-H5UmVgmRAoFUjE9QUogI44Setaw/exec';   // <-- REPLACE WITH YOUR ACTUAL URL
-  // ==================================================================
+  let projects = JSON.parse(localStorage.getItem('arcana_projects')) || [
+    { id:'p1', name:'Website Redesign', status:'in-progress', priority:'High', dueDate:'2026-06-20', description:'React portfolio', groupId:'g1' },
+    { id:'p2', name:'Learn Rust', status:'planning', priority:'Medium', dueDate:'2026-07-10', description:'Book and exercises', groupId:'g1' },
+    { id:'p3', name:'Fitness Routine', status:'in-progress', priority:'Low', dueDate:'2026-07-05', description:'30-day challenge', groupId:'g4' }
+  ];
+  let tasks = JSON.parse(localStorage.getItem('arcana_tasks')) || [];
+  function saveProjects() { localStorage.setItem('arcana_projects', JSON.stringify(projects)); }
+  function saveTasks() { localStorage.setItem('arcana_tasks', JSON.stringify(tasks)); }
 
-  let projects = [];     // from Projects sheet
-  let tasks = [];        // from Tasks sheet
-  let selectedProjectId = null;
-  let activeGroupId = 'g1';   // local grouping, not in sheet – can be hardcoded or added to sheet later
-
-  // Domain/group mapping (hardcoded for UI grouping – you can later move to sheet)
   const domains = [{id:'d1',name:'Academics'},{id:'d2',name:'Clubs'},{id:'d3',name:'Personal'}];
   const groups = [{id:'g1',domainId:'d1',name:'Computer Science'},{id:'g2',domainId:'d1',name:'Mathematics'},{id:'g3',domainId:'d2',name:'Coding Club'},{id:'g4',domainId:'d3',name:'Fitness'}];
+  let selectedProjectId = null;
+  let activeGroupId = 'g1';
 
-  // Helper to map a project to a group (you can add `groupId` column to your Projects sheet later)
-  function getGroupForProject(project) {
-    // Simple mapping based on project name for demo – you should add a `groupId` field in your sheet
-    if (project.name.includes('Website') || project.name.includes('AI') || project.name.includes('Rust')) return 'g1';
-    if (project.name.includes('Calculus')) return 'g2';
-    if (project.name.includes('Hackathon') || project.name.includes('Website Redesign')) return 'g3';
-    if (project.name.includes('30-Day')) return 'g4';
-    return 'g1';
-  }
-
-  // ======================== API CRUD ========================
-  async function fetchProjects() {
-    const res = await fetch(`${API_URL}?type=projects`);
-    projects = await res.json();
-    renderDomainsAndKanban();
-  }
-
-  async function fetchTasks() {
-    const res = await fetch(`${API_URL}?type=tasks`);
-    tasks = await res.json();
-    if (selectedProjectId) refreshDetailPanel(selectedProjectId);
-    renderDomainsAndKanban(); // re-render to update task counts
-  }
-
-  async function updateProject(id, updates) {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'update', type: 'projects', data: { id, ...updates } })
-    });
-    await fetchProjects();
-    if (selectedProjectId === id) refreshDetailPanel(id);
-  }
-
-  async function addProject(newProject) {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'add', type: 'projects', data: newProject })
-    });
-    await fetchProjects();
-  }
-
-  async function deleteProject(id) {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'delete', type: 'projects', data: { id } })
-    });
-    await fetchProjects();
-    if (selectedProjectId === id) selectedProjectId = null;
-  }
-
-  async function updateTask(id, updates) {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'updateTask', type: 'tasks', data: { id, ...updates } })
-    });
-    await fetchTasks();
-  }
-
-  async function deleteTask(id) {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'deleteTask', type: 'tasks', data: { id } })
-    });
-    await fetchTasks();
-  }
-
-  async function addTask(newTask) {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'addTask', type: 'tasks', data: newTask })
-    });
-    await fetchTasks();
-  }
-
-  // ======================== UI: Domains & Kanban ========================
   function renderDomainsAndKanban() {
-    const container = document.getElementById('projects-layout');
-    // Filter projects by current group (using the helper mapping)
-    const groupProjects = projects.filter(p => getGroupForProject(p) === activeGroupId);
+    const groupProjects = projects.filter(p => p.groupId === activeGroupId);
     const cols = ['todo','in-progress','planning','done'];
     const titles = {todo:'To Do','in-progress':'In Progress',planning:'Planning',done:'Done'};
+    const container = document.getElementById('projects-layout');
     container.innerHTML = `
-      <div class="domains-panel">
-        <h3>Domains</h3>
-        ${domains.map(d => `
-          <div><strong>${d.name}</strong>
-            <ul>${groups.filter(g=>g.domainId===d.id).map(g => `
-              <li style="cursor:pointer;padding:4px;${activeGroupId===g.id?'background:#ffe6d5;border-left:3px solid var(--color-primary);':''}" data-group="${g.id}">${g.name}</li>
-            `).join('')}</ul>
-          </div>
-        `).join('')}
-        <button class="add-btn" id="newProjectBtn" style="margin-top:1rem;">+ New Project</button>
-      </div>
-      <div class="kanban-panel">
-        <h3>${groups.find(g=>g.id===activeGroupId)?.name}</h3>
-        <div class="kanban-columns">
-          ${cols.map(col => `
-            <div class="kanban-col" data-status="${col}">
-              <div class="col-title">${titles[col]}</div>
-              ${groupProjects.filter(p => p.status === col).map(p => `
-                <div class="project-card ${selectedProjectId === p.id ? 'selected' : ''}" data-project-id="${p.id}">
-                  <div class="project-title">${p.name}</div>
-                  <div class="project-meta">${p.priority} · due ${p.dueDate || '—'}</div>
-                </div>
-              `).join('')}
-            </div>
-          `).join('')}
-        </div>
-      </div>
+      <div class="domains-panel"><h3>Domains</h3>${domains.map(d => `<div><strong>${d.name}</strong><ul>${groups.filter(g=>g.domainId===d.id).map(g => `<li style="cursor:pointer;padding:4px;${activeGroupId===g.id?'background:#ffe6d5;border-left:3px solid var(--color-primary);':''}" data-group="${g.id}">${g.name}</li>`).join('')}</ul></div>`).join('')}<button class="add-btn" id="newProjectBtn">+ New Project</button></div>
+      <div class="kanban-panel"><h3>${groups.find(g=>g.id===activeGroupId)?.name}</h3><div class="kanban-columns">${cols.map(col => `<div class="kanban-col" data-status="${col}"><div class="col-title">${titles[col]}</div>${groupProjects.filter(p => p.status === col).map(p => `<div class="project-card ${selectedProjectId === p.id ? 'selected' : ''}" data-project-id="${p.id}"><div class="project-title">${p.name}</div><div class="project-meta">${p.priority} · due ${p.dueDate || '—'}</div></div>`).join('')}</div>`).join('')}</div></div>
       <div class="detail-panel" id="detailPanel">Select a project</div>
     `;
-    // Group click handlers
-    document.querySelectorAll('[data-group]').forEach(el => {
-      el.addEventListener('click', () => {
-        activeGroupId = el.dataset.group;
-        renderDomainsAndKanban();
-      });
-    });
-    // Project card click
-    document.querySelectorAll('.project-card').forEach(card => {
-      card.addEventListener('click', () => {
-        selectedProjectId = card.dataset.projectId;
-        renderDomainsAndKanban();
-        refreshDetailPanel(selectedProjectId);
-      });
-    });
-    // Drag & drop
-    document.querySelectorAll('.project-card').forEach(card => {
-      card.setAttribute('draggable', 'true');
-      card.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', card.dataset.projectId));
-    });
-    document.querySelectorAll('.kanban-col').forEach(col => {
-      col.addEventListener('dragover', e => e.preventDefault());
-      col.addEventListener('drop', async e => {
-        const pid = e.dataTransfer.getData('text/plain');
-        const newStatus = col.dataset.status;
-        const proj = projects.find(p => p.id === pid);
-        if (proj && proj.status !== newStatus) {
-          await updateProject(pid, { status: newStatus });
-        }
-      });
-    });
-    // New project button
+    document.querySelectorAll('[data-group]').forEach(el => el.addEventListener('click', () => { activeGroupId = el.dataset.group; renderDomainsAndKanban(); }));
+    document.querySelectorAll('.project-card').forEach(card => card.addEventListener('click', () => { selectedProjectId = card.dataset.projectId; renderDomainsAndKanban(); refreshDetailPanel(); }));
     document.getElementById('newProjectBtn').addEventListener('click', async () => {
-      const name = prompt('Project name:');
-      if (!name) return;
+      const name = prompt('Project name:'); if (!name) return;
       const newId = 'p' + Date.now();
-      await addProject({
-        id: newId,
-        name: name,
-        status: 'todo',
-        priority: 'Medium',
-        dueDate: '',
-        description: ''
-      });
+      projects.push({ id:newId, name, status:'todo', priority:'Medium', dueDate:'', description:'', groupId:activeGroupId });
+      saveProjects(); renderDomainsAndKanban();
     });
+    // drag drop
+    document.querySelectorAll('.project-card').forEach(card => { card.setAttribute('draggable','true'); card.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', card.dataset.projectId)); });
+    document.querySelectorAll('.kanban-col').forEach(col => { col.addEventListener('dragover', e => e.preventDefault()); col.addEventListener('drop', e => { const pid = e.dataTransfer.getData('text/plain'); const newStatus = col.dataset.status; const proj = projects.find(p => p.id === pid); if (proj && proj.status !== newStatus) { proj.status = newStatus; saveProjects(); renderDomainsAndKanban(); } }); });
   }
 
-  // ======================== Project Detail Panel ========================
-  async function refreshDetailPanel(pid) {
-    const proj = projects.find(p => p.id === pid);
+  function refreshDetailPanel() {
+    const proj = projects.find(p => p.id === selectedProjectId);
     if (!proj) return;
-    const projTasks = tasks.filter(t => t.projectId === pid);
+    const projTasks = tasks.filter(t => t.projectId === proj.id);
     const detailDiv = document.getElementById('detailPanel');
     detailDiv.innerHTML = `
-      <input id="pname" value="${proj.name}" class="edit-field">
-      <textarea id="pdesc" class="edit-field">${proj.description || ''}</textarea>
+      <input id="pname" value="${proj.name}" class="edit-field"><textarea id="pdesc" class="edit-field">${proj.description || ''}</textarea>
       <select id="pstatus" class="edit-field">${['todo','in-progress','planning','done'].map(s=>`<option ${proj.status===s?'selected':''}>${s}</option>`).join('')}</select>
       <select id="ppriority" class="edit-field"><option ${proj.priority==='High'?'selected':''}>High</option><option ${proj.priority==='Medium'?'selected':''}>Medium</option><option ${proj.priority==='Low'?'selected':''}>Low</option></select>
       <input type="date" id="pdue" value="${proj.dueDate || ''}" class="edit-field">
-      <button class="back-btn" id="saveProj">Save changes</button>
-      <button class="back-btn" id="deleteProj" style="background:#c2410c; margin-top:0.5rem;">Delete Project</button>
-      <div class="detail-section"><h4>Tasks <button class="add-btn" id="addTaskBtn">+ Add</button></h4><div id="projTaskList"></div></div>
+      <button class="back-btn" id="saveProj">Save</button>
+      <button class="back-btn" id="deleteProj" style="background:#c2410c;">Delete Project</button>
+      <div><h4>Tasks <button class="add-btn" id="addTaskBtn">+ Add</button></h4><div id="projTaskList"></div></div>
     `;
-    // Task list
     const taskContainer = document.getElementById('projTaskList');
-    if (projTasks.length === 0) taskContainer.innerHTML = '<div class="empty-message">No tasks yet</div>';
-    else {
-      taskContainer.innerHTML = projTasks.map(t => `
-        <div class="task-item-proj" data-task-id="${t.id}">
-          <input type="checkbox" class="task-checkbox-proj" ${t.completed ? 'checked' : ''}>
-          <span class="${t.completed ? 'done' : ''}">${t.title}</span>
-          <span class="priority-${t.priority.toLowerCase()}">${t.priority}</span>
-          <button class="delete-task-proj" style="background:none;border:none;cursor:pointer;">🗑️</button>
-        </div>
-      `).join('');
-    }
-    // Save project
-    document.getElementById('saveProj').onclick = async () => {
-      await updateProject(pid, {
-        name: document.getElementById('pname').value,
-        description: document.getElementById('pdesc').value,
-        status: document.getElementById('pstatus').value,
-        priority: document.getElementById('ppriority').value,
-        dueDate: document.getElementById('pdue').value
-      });
-    };
-    // Delete project
-    document.getElementById('deleteProj').onclick = async () => {
-      if (confirm('Delete this project? All tasks will remain but become unlinked.')) {
-        await deleteProject(pid);
-        selectedProjectId = null;
-        renderDomainsAndKanban();
-      }
-    };
-    // Add task
-    document.getElementById('addTaskBtn').onclick = async () => {
-      const title = prompt('Task title:');
-      if (!title) return;
-      const dueDate = prompt('Due date (YYYY-MM-DD):', '');
-      const priority = prompt('Priority (High/Medium/Low):', 'Medium');
-      await addTask({
-        id: 't' + Date.now(),
-        projectId: pid,
-        title,
-        dueDate,
-        priority,
-        status: 'Not Started',
-        completed: false
-      });
-    };
-    // Task checkbox & delete (live)
-    document.querySelectorAll('.task-checkbox-proj').forEach(cb => {
-      cb.addEventListener('change', async (e) => {
-        const div = e.target.closest('.task-item-proj');
-        const taskId = div.dataset.taskId;
-        await updateTask(taskId, { completed: e.target.checked });
-      });
-    });
-    document.querySelectorAll('.delete-task-proj').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const div = e.target.closest('.task-item-proj');
-        const taskId = div.dataset.taskId;
-        await deleteTask(taskId);
-      });
-    });
+    if (projTasks.length === 0) taskContainer.innerHTML = '<div>No tasks</div>';
+    else taskContainer.innerHTML = projTasks.map(t => `<div class="task-item-proj" data-task-id="${t.id}"><input type="checkbox" class="task-checkbox-proj" ${t.completed?'checked':''}><span class="${t.completed?'done':''}">${t.title}</span><span class="priority-${t.priority.toLowerCase()}">${t.priority}</span><button class="delete-task-proj" style="background:none;border:none;cursor:pointer;">🗑️</button></div>`).join('');
+    document.getElementById('saveProj').onclick = () => { proj.name = document.getElementById('pname').value; proj.description = document.getElementById('pdesc').value; proj.status = document.getElementById('pstatus').value; proj.priority = document.getElementById('ppriority').value; proj.dueDate = document.getElementById('pdue').value; saveProjects(); renderDomainsAndKanban(); };
+    document.getElementById('deleteProj').onclick = () => { if(confirm('Delete project?')){ projects = projects.filter(p => p.id !== proj.id); saveProjects(); selectedProjectId = null; renderDomainsAndKanban(); } };
+    document.getElementById('addTaskBtn').onclick = () => { const title = prompt('Task title:'); if(title){ const newId='t'+Date.now(); tasks.push({ id:newId, projectId:proj.id, title, dueDate:'', priority:'Medium', status:'Not Started', completed:false }); saveTasks(); refreshDetailPanel(); } };
+    document.querySelectorAll('.task-checkbox-proj').forEach(cb => cb.addEventListener('change', (e) => { const div = e.target.closest('.task-item-proj'); const taskId = div.dataset.taskId; const task = tasks.find(t => t.id === taskId); if(task){ task.completed = e.target.checked; saveTasks(); refreshDetailPanel(); } }));
+    document.querySelectorAll('.delete-task-proj').forEach(btn => btn.addEventListener('click', (e) => { const div = e.target.closest('.task-item-proj'); const taskId = div.dataset.taskId; tasks = tasks.filter(t => t.id !== taskId); saveTasks(); refreshDetailPanel(); }));
   }
-
-  // Initial load
-  fetchProjects().then(fetchTasks);
+  renderDomainsAndKanban();
 </script>
 </body>
 </html>

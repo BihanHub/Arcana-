@@ -32,35 +32,18 @@
     </div>
   </main>
 </div>
-<script src="js/data.js"></script>
 <script>
-  // ========== REPLACE THIS WITH YOUR ACTUAL API URL ==========
-  const API_URL = 'https://script.google.com/macros/s/AKfycbyBIhy8vZYt8PtmIvToJfcZGbeL0vTEdwi3SkLD2p-H5UmVgmRAoFUjE9QUogI44Setaw/exec';  // e.g. 'https://script.google.com/macros/s/.../exec'
-  // ============================================================
+  // Load tasks from localStorage or default
+  let tasks = JSON.parse(localStorage.getItem('arcana_tasks')) || [
+    { id:'t1', projectId:'p1', title:'Create wireframes', dueDate:'2026-06-10', priority:'High', status:'In Progress', completed: false },
+    { id:'t2', projectId:'p1', title:'Design homepage mockup', dueDate:'2026-06-15', priority:'High', status:'Not Started', completed: false },
+    { id:'t3', projectId:'p1', title:'Write frontend code', dueDate:'2026-06-20', priority:'Medium', status:'Not Started', completed: false },
+    { id:'t4', projectId:'p2', title:'Read Rust book chapters 1-5', dueDate:'2026-06-12', priority:'Medium', status:'In Progress', completed: false },
+    { id:'t5', projectId:'p2', title:'Complete Rustlings exercises', dueDate:'2026-06-25', priority:'Low', status:'Not Started', completed: false },
+    { id:'t6', projectId:'p3', title:'Morning yoga - 30 days', dueDate:'2026-06-30', priority:'Medium', status:'Not Started', completed: false }
+  ];
 
-  let tasks = [];
-
-  async function fetchTasks() {
-    const res = await fetch(`${API_URL}?type=tasks`);
-    tasks = await res.json();
-    renderHomeWidgets();
-  }
-
-  async function updateTask(id, updates) {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'updateTask', type: 'tasks', data: { id, ...updates } })
-    });
-    await fetchTasks();
-  }
-
-  async function deleteTask(id) {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'deleteTask', type: 'tasks', data: { id } })
-    });
-    await fetchTasks();
-  }
+  function saveTasks() { localStorage.setItem('arcana_tasks', JSON.stringify(tasks)); }
 
   function renderHomeWidgets() {
     const todayTasks = tasks.slice(0,3);
@@ -72,32 +55,37 @@
         <button class="delete-task-btn" style="background:none; border:none; cursor:pointer; color:var(--color-danger); margin-left:auto;">🗑️</button>
       </div>
     `).join('');
-    // Checkbox toggle
+
     document.querySelectorAll('#today-tasks .task-checkbox').forEach(cb => {
-      cb.addEventListener('change', async (e) => {
+      cb.addEventListener('change', (e) => {
         const taskDiv = e.target.closest('.task-item');
         const taskId = taskDiv.dataset.taskId;
-        const completed = e.target.checked;
-        await updateTask(taskId, { completed });
+        const task = tasks.find(t => t.id === taskId);
+        if (task) {
+          task.completed = e.target.checked;
+          saveTasks();
+          const textSpan = taskDiv.querySelector('.task-text');
+          if (e.target.checked) textSpan.classList.add('done');
+          else textSpan.classList.remove('done');
+        }
       });
     });
-    // Delete button
     document.querySelectorAll('#today-tasks .delete-task-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
+      btn.addEventListener('click', (e) => {
         const taskDiv = e.target.closest('.task-item');
         const taskId = taskDiv.dataset.taskId;
-        await deleteTask(taskId);
+        const index = tasks.findIndex(t => t.id === taskId);
+        if (index !== -1) tasks.splice(index, 1);
+        saveTasks();
+        renderHomeWidgets();
       });
     });
-    // Upcoming events (hardcoded for now, but could fetch from API)
     document.getElementById('upcoming-events').innerHTML = '<div class="task-item">Team standup — 2026-06-06</div><div class="task-item">Dentist appointment — 2026-06-08</div>';
-    // Reading (static)
     document.getElementById('continue-reading').innerHTML = '<div><strong>Eloquent JavaScript</strong><br><span style="font-size:0.8rem;">Marijn Haverbeke</span></div>';
     document.getElementById('learning-progress-widget').innerHTML = `<p><strong>Coding</strong> · 2 chapters completed</p><div class="progress-bar"><div class="progress-fill" style="width:40%"></div></div>`;
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
   }
-
-  fetchTasks();
+  renderHomeWidgets();
 </script>
 </body>
 </html>

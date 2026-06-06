@@ -8,107 +8,140 @@
   <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
   <style>
     .calendar-layout { display: flex; gap: 1.5rem; flex-wrap: wrap; }
-    .calendar-main { flex: 2.4; }
-    .right-panel { flex: 1; display: flex; flex-direction: column; gap: 1.5rem; }
+    .calendar-main { flex: 2.4; min-width: 280px; }
+    .right-panel { flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 1.5rem; }
     .panel-card { background: var(--color-surface); border-radius: var(--radius-lg); border: 1px solid var(--color-border); padding: 1rem; }
+    .task-list { list-style: none; margin: 0; padding: 0; }
     .task-list li { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; border-bottom: 1px solid var(--color-border-light); }
     .done { text-decoration: line-through; color: var(--color-text-muted); }
+    .fc .fc-daygrid-day-frame { min-height: 110px !important; padding: 6px !important; cursor: pointer; }
+    .fc .fc-daygrid-day-frame:hover { background: rgba(180,83,9,0.05); }
+    .fc-event { border-radius: 8px !important; font-size: 0.7rem !important; padding: 2px 5px !important; pointer-events: none; }
   </style>
 </head>
 <body>
 <div id="app">
-  <nav class="top-nav">...</nav>
+  <nav class="top-nav">
+    <div class="logo">Arcana</div>
+    <div class="nav-links">
+      <a href="home.html" class="nav-link">Home</a>
+      <a href="projects.html" class="nav-link">Projects</a>
+      <a href="tasks.html" class="nav-link">Tasks</a>
+      <a href="calendar.html" class="nav-link active">Calendar</a>
+      <a href="learning.html" class="nav-link">Learning</a>
+      <a href="library.html" class="nav-link">Library</a>
+    </div>
+  </nav>
   <main class="main-content">
-    <div class="calendar-header"><h2>Calendar</h2></div>
+    <div class="calendar-header"><h2>Calendar</h2><button class="back-btn" id="add-event-btn">+ Add event</button></div>
     <div class="calendar-layout">
       <div class="calendar-main"><div id="calendar"></div></div>
       <div class="right-panel">
-        <div class="panel-card"><h3>Tasks for</h3><div id="task-date"></div><div id="task-list-container"></div></div>
-        <div class="panel-card"><h3>Events</h3><div id="event-date"></div><div id="event-list-container"></div></div>
+        <div class="panel-card"><h3>Tasks for</h3><div class="task-date" id="task-date"></div><div id="task-list-container"></div></div>
+        <div class="panel-card"><h3>Events</h3><div class="task-date" id="event-date"></div><div id="event-list-container"></div></div>
       </div>
     </div>
   </main>
 </div>
-<script src="js/data.js"></script>
+
 <script>
-  const API_URL = 'https://script.google.com/macros/s/AKfycbyBIhy8vZYt8PtmIvToJfcZGbeL0vTEdwi3SkLD2p-H5UmVgmRAoFUjE9QUogI44Setaw/exec';  // REPLACE
-  let tasks = [];
+  // ---------- Load tasks from localStorage ----------
+  let tasks = JSON.parse(localStorage.getItem('arcana_tasks')) || [
+    { id:'t1', projectId:'p1', title:'Create wireframes', dueDate:'2026-06-10', priority:'High', status:'In Progress', completed: false },
+    { id:'t2', projectId:'p1', title:'Design homepage mockup', dueDate:'2026-06-15', priority:'High', status:'Not Started', completed: false },
+    { id:'t3', projectId:'p1', title:'Write frontend code', dueDate:'2026-06-20', priority:'Medium', status:'Not Started', completed: false },
+    { id:'t4', projectId:'p2', title:'Read Rust book chapters 1-5', dueDate:'2026-06-12', priority:'Medium', status:'In Progress', completed: false },
+    { id:'t5', projectId:'p2', title:'Complete Rustlings exercises', dueDate:'2026-06-25', priority:'Low', status:'Not Started', completed: false },
+    { id:'t6', projectId:'p3', title:'Morning yoga - 30 days', dueDate:'2026-06-30', priority:'Medium', status:'Not Started', completed: false }
+  ];
+  function saveTasks() { localStorage.setItem('arcana_tasks', JSON.stringify(tasks)); }
 
-  async function fetchTasks() {
-    const res = await fetch(`${API_URL}?type=tasks`);
-    tasks = await res.json();
-  }
-
-  async function updateTask(id, updates) {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'updateTask', type: 'tasks', data: { id, ...updates } })
-    });
-    await fetchTasks();
-    if (window.selectedDate) updatePanelsForDate(window.selectedDate);
-  }
-
-  async function deleteTask(id) {
-    await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'deleteTask', type: 'tasks', data: { id } })
-    });
-    await fetchTasks();
-    if (window.selectedDate) updatePanelsForDate(window.selectedDate);
-  }
+  // ---------- Helper to update panels for a given date ----------
+  let selectedDateStr = new Date().toISOString().slice(0,10);
 
   function updatePanelsForDate(dateStr) {
-    window.selectedDate = dateStr;
+    selectedDateStr = dateStr;
     const displayDate = new Date(dateStr).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
     document.getElementById('task-date').innerText = displayDate;
     document.getElementById('event-date').innerText = displayDate;
+
     const tasksForDate = tasks.filter(t => t.dueDate === dateStr);
     const container = document.getElementById('task-list-container');
-    if (!tasksForDate.length) container.innerHTML = '<p>No tasks due.</p>';
-    else {
+    if (!tasksForDate.length) {
+      container.innerHTML = '<p class="empty-message">No tasks due on this day.</p>';
+    } else {
       container.innerHTML = `<ul class="task-list">${tasksForDate.map(t => `
         <li data-task-id="${t.id}">
           <input type="checkbox" class="task-checkbox-cal" ${t.completed ? 'checked' : ''}>
           <span class="${t.completed ? 'done' : ''}">${t.title}</span>
           <span class="priority-${t.priority.toLowerCase()}">${t.priority}</span>
-          <button class="delete-task-cal" style="background:none; border:none; cursor:pointer;">🗑️</button>
+          <button class="delete-task-cal" style="background:none; border:none; cursor:pointer; color:var(--color-danger);">🗑️</button>
         </li>
       `).join('')}</ul>`;
-      // Checkbox
+      // Checkbox toggle
       document.querySelectorAll('.task-checkbox-cal').forEach(cb => {
-        cb.addEventListener('change', async (e) => {
+        cb.addEventListener('change', (e) => {
           const li = e.target.closest('li');
           const taskId = li.dataset.taskId;
-          const completed = e.target.checked;
-          await updateTask(taskId, { completed });
+          const task = tasks.find(t => t.id === taskId);
+          if (task) {
+            task.completed = e.target.checked;
+            saveTasks();
+            const span = li.querySelector('span:first-of-type');
+            if (e.target.checked) span.classList.add('done');
+            else span.classList.remove('done');
+          }
         });
       });
-      // Delete
+      // Delete button
       document.querySelectorAll('.delete-task-cal').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
+        btn.addEventListener('click', (e) => {
           const li = e.target.closest('li');
           const taskId = li.dataset.taskId;
-          await deleteTask(taskId);
+          const idx = tasks.findIndex(t => t.id === taskId);
+          if (idx !== -1) tasks.splice(idx, 1);
+          saveTasks();
+          updatePanelsForDate(selectedDateStr); // refresh
         });
       });
     }
-    // Events (static for now)
-    document.getElementById('event-list-container').innerHTML = '<p>Events loaded from sheet (same method).</p>';
+    // Events (static example – can be extended)
+    document.getElementById('event-list-container').innerHTML = `
+      <ul class="task-list">
+        <li>Team standup — 09:00 (weekly)</li>
+        <li>Dentist appointment — 10:00</li>
+        <li>Book club — all day</li>
+      </ul>
+    `;
   }
 
+  // ---------- FullCalendar initialisation ----------
+  let calendar;
   function initCalendar() {
     const calendarEl = document.getElementById('calendar');
-    const calendar = new FullCalendar.Calendar(calendarEl, {
+    calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
-      events: [], // add events from sheet later
+      events: [
+        // static events for demo
+        { title: 'Team standup', start: '2026-06-06', allDay: true },
+        { title: 'Dentist', start: '2026-06-08', allDay: true },
+        { title: 'Book club', start: '2026-06-12', allDay: true },
+        { title: 'Math exam', start: '2026-06-14', allDay: true }
+      ],
+      headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
       dateClick: (info) => updatePanelsForDate(info.dateStr),
-      firstDay: 1
+      dayMaxEvents: true,
+      firstDay: 1,
+      height: 'auto'
     });
     calendar.render();
-    updatePanelsForDate(new Date().toISOString().slice(0,10));
+    updatePanelsForDate(selectedDateStr);
   }
+  initCalendar();
 
-  fetchTasks().then(initCalendar);
+  document.getElementById('add-event-btn').addEventListener('click', () => {
+    alert('Add event: you can extend this to push to localStorage array.');
+  });
 </script>
 </body>
 </html>
