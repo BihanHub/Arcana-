@@ -45,103 +45,89 @@
 </div>
 
 <script>
-  // ---------- Load tasks from localStorage ----------
-  let tasks = JSON.parse(localStorage.getItem('arcana_tasks')) || [
-    { id:'t1', projectId:'p1', title:'Create wireframes', dueDate:'2026-06-10', priority:'High', status:'In Progress', completed: false },
-    { id:'t2', projectId:'p1', title:'Design homepage mockup', dueDate:'2026-06-15', priority:'High', status:'Not Started', completed: false },
-    { id:'t3', projectId:'p1', title:'Write frontend code', dueDate:'2026-06-20', priority:'Medium', status:'Not Started', completed: false },
-    { id:'t4', projectId:'p2', title:'Read Rust book chapters 1-5', dueDate:'2026-06-12', priority:'Medium', status:'In Progress', completed: false },
-    { id:'t5', projectId:'p2', title:'Complete Rustlings exercises', dueDate:'2026-06-25', priority:'Low', status:'Not Started', completed: false },
-    { id:'t6', projectId:'p3', title:'Morning yoga - 30 days', dueDate:'2026-06-30', priority:'Medium', status:'Not Started', completed: false }
-  ];
-  function saveTasks() { localStorage.setItem('arcana_tasks', JSON.stringify(tasks)); }
+  const AIRTABLE_API_KEY = 'pat3c3gEAV8OVrtQR';
+  const AIRTABLE_BASE_ID = 'apprEJdW35ZK7yast';
+  const TASKS_TABLE = 'Tasks';
+  let tasks = [];
 
-  // ---------- Helper to update panels for a given date ----------
+  async function fetchTasks() {
+    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TASKS_TABLE}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` } });
+    const data = await res.json();
+    tasks = data.records.map(r => ({ id: r.id, ...r.fields, completed: r.fields.Completed || false }));
+    updatePanelsForDate(window.selectedDateStr || new Date().toISOString().slice(0,10));
+  }
+
+  async function updateTask(taskId, updates) {
+    await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TASKS_TABLE}/${taskId}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: updates })
+    });
+    await fetchTasks();
+  }
+
+  async function deleteTask(taskId) {
+    await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TASKS_TABLE}/${taskId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` }
+    });
+    await fetchTasks();
+  }
+
   let selectedDateStr = new Date().toISOString().slice(0,10);
-
   function updatePanelsForDate(dateStr) {
     selectedDateStr = dateStr;
     const displayDate = new Date(dateStr).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
     document.getElementById('task-date').innerText = displayDate;
     document.getElementById('event-date').innerText = displayDate;
-
-    const tasksForDate = tasks.filter(t => t.dueDate === dateStr);
+    const tasksForDate = tasks.filter(t => t.DueDate === dateStr);
     const container = document.getElementById('task-list-container');
-    if (!tasksForDate.length) {
-      container.innerHTML = '<p class="empty-message">No tasks due on this day.</p>';
-    } else {
+    if (!tasksForDate.length) container.innerHTML = '<p>No tasks due.</p>';
+    else {
       container.innerHTML = `<ul class="task-list">${tasksForDate.map(t => `
         <li data-task-id="${t.id}">
           <input type="checkbox" class="task-checkbox-cal" ${t.completed ? 'checked' : ''}>
-          <span class="${t.completed ? 'done' : ''}">${t.title}</span>
-          <span class="priority-${t.priority.toLowerCase()}">${t.priority}</span>
-          <button class="delete-task-cal" style="background:none; border:none; cursor:pointer; color:var(--color-danger);">🗑️</button>
+          <span class="${t.completed ? 'done' : ''}">${t.Title}</span>
+          <span class="priority-${t.Priority.toLowerCase()}">${t.Priority}</span>
+          <button class="delete-task-cal" style="background:none;border:none;cursor:pointer;">🗑️</button>
         </li>
       `).join('')}</ul>`;
-      // Checkbox toggle
       document.querySelectorAll('.task-checkbox-cal').forEach(cb => {
-        cb.addEventListener('change', (e) => {
+        cb.addEventListener('change', async (e) => {
           const li = e.target.closest('li');
           const taskId = li.dataset.taskId;
-          const task = tasks.find(t => t.id === taskId);
-          if (task) {
-            task.completed = e.target.checked;
-            saveTasks();
-            const span = li.querySelector('span:first-of-type');
-            if (e.target.checked) span.classList.add('done');
-            else span.classList.remove('done');
-          }
+          await updateTask(taskId, { Completed: e.target.checked });
         });
       });
-      // Delete button
       document.querySelectorAll('.delete-task-cal').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async (e) => {
           const li = e.target.closest('li');
           const taskId = li.dataset.taskId;
-          const idx = tasks.findIndex(t => t.id === taskId);
-          if (idx !== -1) tasks.splice(idx, 1);
-          saveTasks();
-          updatePanelsForDate(selectedDateStr); // refresh
+          await deleteTask(taskId);
         });
       });
     }
-    // Events (static example – can be extended)
-    document.getElementById('event-list-container').innerHTML = `
-      <ul class="task-list">
-        <li>Team standup — 09:00 (weekly)</li>
-        <li>Dentist appointment — 10:00</li>
-        <li>Book club — all day</li>
-      </ul>
-    `;
+    document.getElementById('event-list-container').innerHTML = `<ul class="task-list"><li>Team standup (weekly)</li><li>Dentist appointment</li></ul>`;
   }
 
-  // ---------- FullCalendar initialisation ----------
-  let calendar;
   function initCalendar() {
     const calendarEl = document.getElementById('calendar');
-    calendar = new FullCalendar.Calendar(calendarEl, {
+    const calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
       events: [
-        // static events for demo
         { title: 'Team standup', start: '2026-06-06', allDay: true },
-        { title: 'Dentist', start: '2026-06-08', allDay: true },
-        { title: 'Book club', start: '2026-06-12', allDay: true },
-        { title: 'Math exam', start: '2026-06-14', allDay: true }
+        { title: 'Dentist', start: '2026-06-08', allDay: true }
       ],
       headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
       dateClick: (info) => updatePanelsForDate(info.dateStr),
-      dayMaxEvents: true,
-      firstDay: 1,
-      height: 'auto'
+      dayMaxEvents: true, firstDay: 1, height: 'auto'
     });
     calendar.render();
-    updatePanelsForDate(selectedDateStr);
   }
   initCalendar();
-
-  document.getElementById('add-event-btn').addEventListener('click', () => {
-    alert('Add event: you can extend this to push to localStorage array.');
-  });
+  fetchTasks();
+  document.getElementById('add-event-btn').onclick = () => alert('Add event: would go to Airtable Events table');
 </script>
 </body>
 </html>

@@ -6,6 +6,10 @@
   <title>Arcana – Home</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .delete-task-btn { background: none; border: none; cursor: pointer; color: var(--color-danger); margin-left: auto; font-size: 0.8rem; }
+    .delete-task-btn:hover { opacity: 0.7; }
+  </style>
 </head>
 <body>
 <div id="app">
@@ -32,18 +36,52 @@
     </div>
   </main>
 </div>
-<script>
-  // Load tasks from localStorage or default
-  let tasks = JSON.parse(localStorage.getItem('arcana_tasks')) || [
-    { id:'t1', projectId:'p1', title:'Create wireframes', dueDate:'2026-06-10', priority:'High', status:'In Progress', completed: false },
-    { id:'t2', projectId:'p1', title:'Design homepage mockup', dueDate:'2026-06-15', priority:'High', status:'Not Started', completed: false },
-    { id:'t3', projectId:'p1', title:'Write frontend code', dueDate:'2026-06-20', priority:'Medium', status:'Not Started', completed: false },
-    { id:'t4', projectId:'p2', title:'Read Rust book chapters 1-5', dueDate:'2026-06-12', priority:'Medium', status:'In Progress', completed: false },
-    { id:'t5', projectId:'p2', title:'Complete Rustlings exercises', dueDate:'2026-06-25', priority:'Low', status:'Not Started', completed: false },
-    { id:'t6', projectId:'p3', title:'Morning yoga - 30 days', dueDate:'2026-06-30', priority:'Medium', status:'Not Started', completed: false }
-  ];
 
-  function saveTasks() { localStorage.setItem('arcana_tasks', JSON.stringify(tasks)); }
+<script>
+  // ========== AIRTABLE CONFIGURATION ==========
+  const AIRTABLE_API_KEY = 'pat3c3gEAV8OVrtQR';
+  const AIRTABLE_BASE_ID = 'apprEJdW35ZK7yast';
+  const TASKS_TABLE = 'Tasks';
+  // ============================================
+
+  let tasks = [];
+
+  async function fetchTasks() {
+    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TASKS_TABLE}`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` }
+    });
+    const data = await response.json();
+    tasks = data.records.map(record => ({
+      id: record.id,
+      title: record.fields.Title,
+      projectId: record.fields.ProjectId,
+      dueDate: record.fields.DueDate,
+      priority: record.fields.Priority,
+      status: record.fields.Status,
+      completed: record.fields.Completed || false
+    }));
+    renderHomeWidgets();
+  }
+
+  async function updateTask(taskId, updates) {
+    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TASKS_TABLE}/${taskId}`;
+    await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${AIRTABLE_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ fields: updates })
+    });
+    await fetchTasks();
+  }
+
+  async function deleteTask(taskId) {
+    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TASKS_TABLE}/${taskId}`;
+    await fetch(url, { method: 'DELETE', headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` } });
+    await fetchTasks();
+  }
 
   function renderHomeWidgets() {
     const todayTasks = tasks.slice(0,3);
@@ -52,40 +90,33 @@
         <input type="checkbox" class="task-checkbox" ${t.completed ? 'checked' : ''}>
         <span class="task-text ${t.completed ? 'done' : ''}">${t.title}</span>
         <span class="priority-${t.priority.toLowerCase()}">${t.priority}</span>
-        <button class="delete-task-btn" style="background:none; border:none; cursor:pointer; color:var(--color-danger); margin-left:auto;">🗑️</button>
+        <button class="delete-task-btn" title="Delete task">🗑️</button>
       </div>
     `).join('');
 
     document.querySelectorAll('#today-tasks .task-checkbox').forEach(cb => {
-      cb.addEventListener('change', (e) => {
+      cb.addEventListener('change', async (e) => {
         const taskDiv = e.target.closest('.task-item');
         const taskId = taskDiv.dataset.taskId;
-        const task = tasks.find(t => t.id === taskId);
-        if (task) {
-          task.completed = e.target.checked;
-          saveTasks();
-          const textSpan = taskDiv.querySelector('.task-text');
-          if (e.target.checked) textSpan.classList.add('done');
-          else textSpan.classList.remove('done');
-        }
+        const completed = e.target.checked;
+        await updateTask(taskId, { Completed: completed });
       });
     });
     document.querySelectorAll('#today-tasks .delete-task-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         const taskDiv = e.target.closest('.task-item');
         const taskId = taskDiv.dataset.taskId;
-        const index = tasks.findIndex(t => t.id === taskId);
-        if (index !== -1) tasks.splice(index, 1);
-        saveTasks();
-        renderHomeWidgets();
+        await deleteTask(taskId);
       });
     });
-    document.getElementById('upcoming-events').innerHTML = '<div class="task-item">Team standup — 2026-06-06</div><div class="task-item">Dentist appointment — 2026-06-08</div>';
-    document.getElementById('continue-reading').innerHTML = '<div><strong>Eloquent JavaScript</strong><br><span style="font-size:0.8rem;">Marijn Haverbeke</span></div>';
+
+    document.getElementById('upcoming-events').innerHTML = `<div class="task-item">Team standup — 2026-06-06</div><div class="task-item">Dentist appointment — 2026-06-08</div>`;
+    document.getElementById('continue-reading').innerHTML = `<div><strong>Eloquent JavaScript</strong><br><span style="font-size:0.8rem;">Marijn Haverbeke</span></div>`;
     document.getElementById('learning-progress-widget').innerHTML = `<p><strong>Coding</strong> · 2 chapters completed</p><div class="progress-bar"><div class="progress-fill" style="width:40%"></div></div>`;
     document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
   }
-  renderHomeWidgets();
+
+  fetchTasks();
 </script>
 </body>
 </html>

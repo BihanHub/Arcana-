@@ -30,71 +30,100 @@
     <div id="tasks-table"></div>
   </main>
 </div>
+
 <script>
-  let tasks = JSON.parse(localStorage.getItem('arcana_tasks')) || [
-    { id:'t1', projectId:'p1', title:'Create wireframes', dueDate:'2026-06-10', priority:'High', status:'In Progress', completed: false },
-    { id:'t2', projectId:'p1', title:'Design homepage mockup', dueDate:'2026-06-15', priority:'High', status:'Not Started', completed: false },
-    { id:'t3', projectId:'p1', title:'Write frontend code', dueDate:'2026-06-20', priority:'Medium', status:'Not Started', completed: false },
-    { id:'t4', projectId:'p2', title:'Read Rust book chapters 1-5', dueDate:'2026-06-12', priority:'Medium', status:'In Progress', completed: false },
-    { id:'t5', projectId:'p2', title:'Complete Rustlings exercises', dueDate:'2026-06-25', priority:'Low', status:'Not Started', completed: false },
-    { id:'t6', projectId:'p3', title:'Morning yoga - 30 days', dueDate:'2026-06-30', priority:'Medium', status:'Not Started', completed: false }
-  ];
-  function saveTasks() { localStorage.setItem('arcana_tasks', JSON.stringify(tasks)); }
+  const AIRTABLE_API_KEY = 'pat3c3gEAV8OVrtQR';
+  const AIRTABLE_BASE_ID = 'apprEJdW35ZK7yast';
+  const TASKS_TABLE = 'Tasks';
+  let tasks = [];
+
+  async function fetchTasks() {
+    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TASKS_TABLE}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` } });
+    const data = await res.json();
+    tasks = data.records.map(r => ({ id: r.id, ...r.fields, completed: r.fields.Completed || false }));
+    applyFilters();
+  }
+
+  async function updateTask(taskId, updates) {
+    await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TASKS_TABLE}/${taskId}`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: updates })
+    });
+    await fetchTasks();
+  }
+
+  async function deleteTask(taskId) {
+    await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TASKS_TABLE}/${taskId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` }
+    });
+    await fetchTasks();
+  }
+
+  async function addTask(newTask) {
+    await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${TASKS_TABLE}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: newTask })
+    });
+    await fetchTasks();
+  }
 
   function renderTaskTable(filtered) {
     const container = document.getElementById('tasks-table');
     if (!filtered.length) { container.innerHTML = '<p class="card">No tasks match.</p>'; return; }
+    const projectNames = { p1:'Website Redesign', p2:'Learn Rust', p3:'Fitness Routine' };
     container.innerHTML = `<table>
       <thead><tr><th></th><th>Title</th><th>Project</th><th>Due</th><th>Priority</th><th>Status</th><th></th></tr></thead>
-      <tbody>${filtered.map(t => {
-        const projName = { p1:'Website Redesign', p2:'Learn Rust', p3:'Fitness Routine' }[t.projectId];
-        return `<tr data-task-id="${t.id}">
+      <tbody>${filtered.map(t => `
+        <tr data-task-id="${t.id}">
           <td><input type="checkbox" class="task-checkbox-table" ${t.completed ? 'checked' : ''}></td>
-          <td class="${t.completed ? 'done' : ''}">${t.title}</td>
-          <td>${projName}</td><td>${t.dueDate || ''}</td>
-          <td><span class="priority-${t.priority.toLowerCase()}">${t.priority}</span></td>
-          <td>${t.status}</td>
+          <td class="${t.completed ? 'done' : ''}">${t.Title}</td>
+          <td>${projectNames[t.ProjectId]}}</td>
+          <td>${t.DueDate || ''}</td>
+          <td><span class="priority-${t.Priority.toLowerCase()}">${t.Priority}</span></td>
+          <td>${t.Status}</td>
           <td><button class="delete-task-table" style="background:none;border:none;cursor:pointer;color:var(--color-danger);">✖</button></td>
-        </tr>`;
-      }).join('')}</tbody>
+        </tr>`).join('')}</tbody>
     </table>`;
     document.querySelectorAll('.task-checkbox-table').forEach(cb => {
-      cb.addEventListener('change', (e) => {
+      cb.addEventListener('change', async (e) => {
         const row = e.target.closest('tr');
         const taskId = row.dataset.taskId;
-        const task = tasks.find(t => t.id === taskId);
-        if (task) { task.completed = e.target.checked; saveTasks(); applyFilters(); }
+        await updateTask(taskId, { Completed: e.target.checked });
       });
     });
     document.querySelectorAll('.delete-task-table').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         const row = e.target.closest('tr');
         const taskId = row.dataset.taskId;
-        const idx = tasks.findIndex(t => t.id === taskId);
-        if (idx !== -1) tasks.splice(idx, 1);
-        saveTasks(); applyFilters();
+        await deleteTask(taskId);
       });
     });
   }
+
   function applyFilters() {
     let filtered = tasks;
     const p = document.getElementById('filter-project').value;
     const pri = document.getElementById('filter-priority').value;
     const st = document.getElementById('filter-status').value;
-    if (p) filtered = filtered.filter(t => t.projectId === p);
-    if (pri) filtered = filtered.filter(t => t.priority === pri);
-    if (st) filtered = filtered.filter(t => t.status === st);
+    if (p) filtered = filtered.filter(t => t.ProjectId === p);
+    if (pri) filtered = filtered.filter(t => t.Priority === pri);
+    if (st) filtered = filtered.filter(t => t.Status === st);
     renderTaskTable(filtered);
   }
-  document.getElementById('add-task-btn').addEventListener('click', () => {
+
+  document.getElementById('add-task-btn').addEventListener('click', async () => {
     const title = prompt('Task title:'); if (!title) return;
     const projectId = prompt('Project ID (p1, p2, p3):', 'p1');
     const dueDate = prompt('Due date (YYYY-MM-DD):', '');
     const priority = prompt('Priority (High/Medium/Low):', 'Medium');
     const status = prompt('Status (Not Started/In Progress/Done):', 'Not Started');
-    tasks.push({ id:'t'+Date.now(), projectId, title, dueDate, priority, status, completed: false });
-    saveTasks(); applyFilters();
+    await addTask({ Title: title, ProjectId: projectId, DueDate: dueDate, Priority: priority, Status: status, Completed: false });
   });
+
   document.getElementById('filter-project').addEventListener('change', applyFilters);
   document.getElementById('filter-priority').addEventListener('change', applyFilters);
   document.getElementById('filter-status').addEventListener('change', applyFilters);
@@ -104,7 +133,8 @@
     document.getElementById('filter-status').value = '';
     applyFilters();
   });
-  applyFilters();
+
+  fetchTasks();
 </script>
 </body>
 </html>
