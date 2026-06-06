@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Arcana – Tasks</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <nav class="top-nav">
+    <div class="logo">Arcana</div>
+    <div class="nav-links">
+      <a href="home.html" class="nav-link">Home</a>
+      <a href="projects.html" class="nav-link">Projects</a>
+      <a href="tasks.html" class="nav-link active">Tasks</a>
+      <a href="calendar.html" class="nav-link">Calendar</a>
+      <a href="learning.html" class="nav-link">Learning</a>
+      <a href="library.html" class="nav-link">Library</a>
+    </div>
+  </nav>
+  <main class="main-content">
+    <div class="drill-header"><h2>All tasks</h2><button class="back-btn" id="add-task-btn">+ New task</button></div>
+    <div class="filters">
+      <select id="filter-project"><option value="">All Projects</option></select>
+      <select id="filter-priority"><option value="">All Priorities</option><option>High</option><option>Medium</option><option>Low</option></select>
+      <select id="filter-status"><option value="">All Statuses</option><option>Not Started</option><option>In Progress</option><option>Done</option></select>
+      <button class="back-btn" id="clear-filters">Clear</button>
+    </div>
+    <div id="tasks-table"></div>
+  </main>
+</div>
+<script src="js/data.js"></script>
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbyBIhy8vZYt8PtmIvToJfcZGbeL0vTEdwi3SkLD2p-H5UmVgmRAoFUjE9QUogI44Setaw/exec';  // REPLACE WITH YOUR ACTUAL URL
+
+  let tasks = [];
+  let projects = [];  // will load from API as well
+
+  async function fetchTasks() {
+    const res = await fetch(`${API_URL}?type=tasks`);
+    tasks = await res.json();
+    applyFilters();
+  }
+
+  async function fetchProjects() {
+    const res = await fetch(`${API_URL}?type=projects`);
+    projects = await res.json();
+    populateProjectFilter();
+  }
+
+  async function updateTask(id, updates) {
+    await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'updateTask', type: 'tasks', data: { id, ...updates } })
+    });
+    await fetchTasks();
+  }
+
+  async function deleteTask(id) {
+    await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteTask', type: 'tasks', data: { id } })
+    });
+    await fetchTasks();
+  }
+
+  async function addTask(newTask) {
+    await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'addTask', type: 'tasks', data: newTask })
+    });
+    await fetchTasks();
+  }
+
+  function populateProjectFilter() {
+    const sel = document.getElementById('filter-project');
+    sel.innerHTML = '<option value="">All Projects</option>' + projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  }
+
+  function renderTaskTable(filtered) {
+    const container = document.getElementById('tasks-table');
+    if (!filtered.length) {
+      container.innerHTML = '<p class="card">No tasks match.</p>';
+      return;
+    }
+    container.innerHTML = `<table>
+      <thead><tr><th></th><th>Title</th><th>Project</th><th>Due</th><th>Priority</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        ${filtered.map(t => {
+          const proj = projects.find(p => p.id === t.projectId)?.name || '';
+          return `
+            <tr data-task-id="${t.id}">
+              <td><input type="checkbox" class="task-checkbox-table" ${t.completed ? 'checked' : ''}></td>
+              <td class="${t.completed ? 'done' : ''}">${t.title}</td>
+              <td>${proj}</td>
+              <td>${t.dueDate || ''}</td>
+              <td><span class="priority-${t.priority.toLowerCase()}">${t.priority}</span></td>
+              <td>${t.status}</td>
+              <td><button class="delete-task-table" style="background:none; border:none; cursor:pointer; color:var(--color-danger);">✖</button></td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>`;
+    // Checkbox toggle
+    document.querySelectorAll('.task-checkbox-table').forEach(cb => {
+      cb.addEventListener('change', async (e) => {
+        const row = e.target.closest('tr');
+        const taskId = row.dataset.taskId;
+        const completed = e.target.checked;
+        await updateTask(taskId, { completed });
+      });
+    });
+    // Delete button
+    document.querySelectorAll('.delete-task-table').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const row = e.target.closest('tr');
+        const taskId = row.dataset.taskId;
+        await deleteTask(taskId);
+      });
+    });
+  }
+
+  function applyFilters() {
+    let filtered = tasks;
+    const p = document.getElementById('filter-project').value;
+    const pri = document.getElementById('filter-priority').value;
+    const st = document.getElementById('filter-status').value;
+    if (p) filtered = filtered.filter(t => t.projectId === p);
+    if (pri) filtered = filtered.filter(t => t.priority === pri);
+    if (st) filtered = filtered.filter(t => t.status === st);
+    renderTaskTable(filtered);
+  }
+
+  // New task modal (simple prompt)
+  document.getElementById('add-task-btn').addEventListener('click', () => {
+    const title = prompt('Task title:');
+    if (!title) return;
+    const projectId = prompt('Project ID (p1, p2, p3):', 'p1');
+    const dueDate = prompt('Due date (YYYY-MM-DD):', '');
+    const priority = prompt('Priority (High/Medium/Low):', 'Medium');
+    const status = prompt('Status (Not Started/In Progress/Done):', 'Not Started');
+    addTask({
+      id: 't' + Date.now(),
+      title,
+      projectId,
+      dueDate,
+      priority,
+      status,
+      completed: false
+    });
+  });
+
+  document.getElementById('filter-project').addEventListener('change', applyFilters);
+  document.getElementById('filter-priority').addEventListener('change', applyFilters);
+  document.getElementById('filter-status').addEventListener('change', applyFilters);
+  document.getElementById('clear-filters').addEventListener('click', () => {
+    document.getElementById('filter-project').value = '';
+    document.getElementById('filter-priority').value = '';
+    document.getElementById('filter-status').value = '';
+    applyFilters();
+  });
+
+  fetchProjects().then(fetchTasks);
+</script>
+</body>
+</html>

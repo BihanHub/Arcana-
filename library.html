@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Arcana – Library</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <nav class="top-nav">
+    <div class="logo">Arcana</div>
+    <div class="nav-links">
+      <a href="home.html" class="nav-link">Home</a>
+      <a href="projects.html" class="nav-link">Projects</a>
+      <a href="tasks.html" class="nav-link">Tasks</a>
+      <a href="calendar.html" class="nav-link">Calendar</a>
+      <a href="learning.html" class="nav-link">Learning</a>
+      <a href="library.html" class="nav-link active">Library</a>
+    </div>
+  </nav>
+  <main class="main-content">
+    <div class="drill-header"><h2>Library</h2></div>
+    <div class="filters">
+      <input type="text" id="library-search" placeholder="Search books...">
+      <select id="library-subject"><option value="">All Subjects</option></select>
+      <select id="library-status"><option value="">All Status</option><option>reading</option><option>read</option><option>want</option></select>
+    </div>
+    <div id="library-grid" class="book-grid"></div>
+  </main>
+</div>
+<script src="js/data.js"></script>
+<script>
+  function renderLibrary(filtered = books) {
+    const grid = document.getElementById('library-grid');
+    grid.innerHTML = filtered.map(b => `
+      <div class="book-card">
+        <div class="book-cover">BOOK</div>
+        <div class="book-card-info">
+          <h4>${b.title}</h4>
+          <div style="font-size:0.8rem; color:#6b5c4e;">${b.author}</div>
+          <span class="status-dot status-${b.status}"></span> ${b.status}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  const subjectSelect = document.getElementById('library-subject');
+  const uniqueSubjects = [...new Set(books.map(b => b.subjectId))].map(id => {
+    const sub = learningData.subjects.find(s => s.id === id);
+    return { id, name: sub ? sub.name : id };
+  });
+  subjectSelect.innerHTML = '<option value="">All Subjects</option>' + uniqueSubjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+
+  function applyLibraryFilters() {
+    const search = document.getElementById('library-search').value.toLowerCase();
+    const subjectId = document.getElementById('library-subject').value;
+    const status = document.getElementById('library-status').value;
+    let filtered = books;
+    if (search) filtered = filtered.filter(b => b.title.toLowerCase().includes(search) || b.author.toLowerCase().includes(search));
+    if (subjectId) filtered = filtered.filter(b => b.subjectId === subjectId);
+    if (status) filtered = filtered.filter(b => b.status === status);
+    renderLibrary(filtered);
+  }
+  document.getElementById('library-search').addEventListener('input', applyLibraryFilters);
+  document.getElementById('library-subject').addEventListener('change', applyLibraryFilters);
+  document.getElementById('library-status').addEventListener('change', applyLibraryFilters);
+  renderLibrary();
+</script>
+</body>
+</html>

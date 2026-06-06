@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Arcana – Calendar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+  <style>
+    .calendar-layout { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .calendar-main { flex: 2.4; }
+    .right-panel { flex: 1; display: flex; flex-direction: column; gap: 1.5rem; }
+    .panel-card { background: var(--color-surface); border-radius: var(--radius-lg); border: 1px solid var(--color-border); padding: 1rem; }
+    .task-list li { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; border-bottom: 1px solid var(--color-border-light); }
+    .done { text-decoration: line-through; color: var(--color-text-muted); }
+  </style>
+</head>
+<body>
+<div id="app">
+  <nav class="top-nav">...</nav>
+  <main class="main-content">
+    <div class="calendar-header"><h2>Calendar</h2></div>
+    <div class="calendar-layout">
+      <div class="calendar-main"><div id="calendar"></div></div>
+      <div class="right-panel">
+        <div class="panel-card"><h3>Tasks for</h3><div id="task-date"></div><div id="task-list-container"></div></div>
+        <div class="panel-card"><h3>Events</h3><div id="event-date"></div><div id="event-list-container"></div></div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="js/data.js"></script>
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbyBIhy8vZYt8PtmIvToJfcZGbeL0vTEdwi3SkLD2p-H5UmVgmRAoFUjE9QUogI44Setaw/exec';  // REPLACE
+  let tasks = [];
+
+  async function fetchTasks() {
+    const res = await fetch(`${API_URL}?type=tasks`);
+    tasks = await res.json();
+  }
+
+  async function updateTask(id, updates) {
+    await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'updateTask', type: 'tasks', data: { id, ...updates } })
+    });
+    await fetchTasks();
+    if (window.selectedDate) updatePanelsForDate(window.selectedDate);
+  }
+
+  async function deleteTask(id) {
+    await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteTask', type: 'tasks', data: { id } })
+    });
+    await fetchTasks();
+    if (window.selectedDate) updatePanelsForDate(window.selectedDate);
+  }
+
+  function updatePanelsForDate(dateStr) {
+    window.selectedDate = dateStr;
+    const displayDate = new Date(dateStr).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+    document.getElementById('task-date').innerText = displayDate;
+    document.getElementById('event-date').innerText = displayDate;
+    const tasksForDate = tasks.filter(t => t.dueDate === dateStr);
+    const container = document.getElementById('task-list-container');
+    if (!tasksForDate.length) container.innerHTML = '<p>No tasks due.</p>';
+    else {
+      container.innerHTML = `<ul class="task-list">${tasksForDate.map(t => `
+        <li data-task-id="${t.id}">
+          <input type="checkbox" class="task-checkbox-cal" ${t.completed ? 'checked' : ''}>
+          <span class="${t.completed ? 'done' : ''}">${t.title}</span>
+          <span class="priority-${t.priority.toLowerCase()}">${t.priority}</span>
+          <button class="delete-task-cal" style="background:none; border:none; cursor:pointer;">🗑️</button>
+        </li>
+      `).join('')}</ul>`;
+      // Checkbox
+      document.querySelectorAll('.task-checkbox-cal').forEach(cb => {
+        cb.addEventListener('change', async (e) => {
+          const li = e.target.closest('li');
+          const taskId = li.dataset.taskId;
+          const completed = e.target.checked;
+          await updateTask(taskId, { completed });
+        });
+      });
+      // Delete
+      document.querySelectorAll('.delete-task-cal').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const li = e.target.closest('li');
+          const taskId = li.dataset.taskId;
+          await deleteTask(taskId);
+        });
+      });
+    }
+    // Events (static for now)
+    document.getElementById('event-list-container').innerHTML = '<p>Events loaded from sheet (same method).</p>';
+  }
+
+  function initCalendar() {
+    const calendarEl = document.getElementById('calendar');
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'dayGridMonth',
+      events: [], // add events from sheet later
+      dateClick: (info) => updatePanelsForDate(info.dateStr),
+      firstDay: 1
+    });
+    calendar.render();
+    updatePanelsForDate(new Date().toISOString().slice(0,10));
+  }
+
+  fetchTasks().then(initCalendar);
+</script>
+</body>
+</html>

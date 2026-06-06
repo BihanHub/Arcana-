@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arcana – Learning Journey</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Enhanced journey styles – bigger, richer cards */
+    .journey-header {
+      margin-bottom: 2rem;
+    }
+    .journey-header h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .journey-header p {
+      color: var(--color-text-secondary);
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--color-text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      margin-bottom: 0.5rem;
+    }
+    .recent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+    .recent-item {
+      background: var(--color-surface);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      border: 1px solid var(--color-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+    }
+    .recent-item:hover {
+      border-color: var(--color-primary-soft);
+      transform: translateX(4px);
+    }
+    .recent-info strong {
+      display: block;
+      font-size: 0.9rem;
+    }
+    .recent-info span {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+    }
+    .continue-btn {
+      background: none;
+      border: 1px solid var(--color-primary);
+      color: var(--color-primary);
+      padding: 0.3rem 0.8rem;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .continue-btn:hover {
+      background: var(--color-primary);
+      color: white;
+    }
+    .goal-card {
+      background: linear-gradient(135deg, #fff3e8 0%, #feeedf 100%);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-top: 1.5rem;
+      border: 1px solid var(--color-primary-soft);
+    }
+    .goal-title {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    /* Horizontal skill cards */
+    .skill-row {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .skill-card-horizontal {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .skill-card-horizontal:hover {
+      transform: translateY(-3px);
+      border-color: var(--color-primary);
+      box-shadow: var(--shadow-md);
+    }
+    .skill-info {
+      flex: 2;
+      min-width: 180px;
+    }
+    .skill-name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+    .skill-description {
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      margin-bottom: 0.5rem;
+    }
+    .skill-progress-area {
+      flex: 1;
+      min-width: 200px;
+    }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+    .explore-btn {
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      padding: 0.5rem 1.2rem;
+      border-radius: 40px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    /* Larger card grid for subjects & chapters */
+    .large-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+    .subject-card, .chapter-card {
+      background: var(--color-surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border);
+      overflow: hidden;
+      transition: all 0.2s;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+    }
+    .subject-card:hover, .chapter-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--color-primary);
+      box-shadow: var(--shadow-md);
+    }
+    .card-cover {
+      height: 120px;
+      background: linear-gradient(135deg, #f3ede6, #e8dfd5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      color: var(--color-primary);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .card-content {
+      padding: 1.2rem;
+    }
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .card-description {
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+      margin-bottom: 0.75rem;
+      line-height: 1.4;
+    }
+    .card-progress {
+      margin: 0.5rem 0;
+    }
+    .card-action {
+      margin-top: 0.5rem;
+      text-align: right;
+    }
+    .action-link {
+      color: var(--color-primary);
+      font-weight: 500;
+      font-size: 0.8rem;
+    }
+    /* Subchapter cards */
+    .subchapter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.2rem;
+      margin-top: 1rem;
+    }
+    .subchapter-card {
+      background: var(--color-surface);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      overflow: hidden;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .subchapter-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--color-primary);
+      box-shadow: var(--shadow-sm);
+    }
+    .subchapter-cover {
+      height: 100px;
+      background: #f1ede7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+    }
+    .subchapter-content {
+      padding: 1rem;
+    }
+    .subchapter-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .subchapter-type {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      color: var(--color-primary);
+      margin-bottom: 0.5rem;
+    }
+    /* Video player layout with playlist sidebar */
+    .video-layout {
+      display: flex;
+      gap: 2rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    .player-section {
+      flex: 2;
+      min-width: 300px;
+    }
+    .player-placeholder {
+      background: #1e1b18;
+      border-radius: var(--radius-md);
+      aspect-ratio: 16/9;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--color-border);
+    }
+    .notes-box {
+      margin-top: 1.5rem;
+    }
+    .notes-box label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    .notes-box textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border);
+      background: var(--color-bg);
+      color: var(--color-text);
+      resize: vertical;
+    }
+    /* Playlist sidebar */
+    .playlist-sidebar {
+      flex: 1;
+      min-width: 260px;
+      background: var(--color-surface);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--color-border);
+      padding: 1rem;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .playlist-sidebar h4 {
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      border-bottom: 2px solid var(--color-primary);
+      display: inline-block;
+      padding-bottom: 0.25rem;
+    }
+    .playlist-item {
+      padding: 0.6rem 0.8rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 0.25rem;
+      border: 1px solid transparent;
+    }
+    .playlist-item:hover {
+      background: rgba(180, 83, 9, 0.08);
+      border-color: var(--color-primary-soft);
+    }
+    .playlist-item.active {
+      background: rgba(180, 83, 9, 0.15);
+      border-color: var(--color-primary);
+      font-weight: 500;
+    }
+    .playlist-item-title {
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .playlist-item-type {
+      font-size: 0.65rem;
+      color: var(--color-text-muted);
+      margin-top: 0.2rem;
+    }
+    @media (max-width: 800px) {
+      .video-layout { flex-direction: column; }
+      .playlist-sidebar { max-height: 300px; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <nav class="top-nav">
+    <div class="logo">Arcana</div>
+    <div class="nav-links">
+      <a href="home.html" class="nav-link">Home</a>
+      <a href="projects.html" class="nav-link">Projects</a>
+      <a href="tasks.html" class="nav-link">Tasks</a>
+      <a href="calendar.html" class="nav-link">Calendar</a>
+      <a href="learning.html" class="nav-link active">Learning</a>
+      <a href="library.html" class="nav-link">Library</a>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div id="learning-container"></div>
+  </main>
+</div>
+
+<script src="js/data.js"></script>
+<script>
+  // --------------------------------------------------------------
+  // Enhanced Learning Journey – with video playlist (subchapter list)
+  // --------------------------------------------------------------
+  const container = document.getElementById('learning-container');
+
+  // Skill metadata
+  const skillDetails = {
+    s1: { name: 'Coding', description: 'Build modern web applications, data structures, and algorithms.', progress: 65, completed: 4, total: 6 },
+    s2: { name: 'Physics', description: 'Understand classical mechanics, motion, and forces.', progress: 30, completed: 1, total: 3 },
+    s3: { name: 'Accounting', description: 'Master financial statements, balance sheets, and equity.', progress: 20, completed: 1, total: 5 }
+  };
+
+  // Subject & chapter metadata (for cover icons and descriptions)
+  const subjectMeta = {
+    sub1: { description: 'Learn to build responsive websites with HTML, CSS, and JavaScript.', progress: 70, coverIcon: '🌐' },
+    sub2: { description: 'Master arrays, linked lists, and algorithmic thinking.', progress: 45, coverIcon: '📊' },
+    sub3: { description: 'Explore Newton’s laws, kinematics, and dynamics.', progress: 30, coverIcon: '⚙️' },
+    sub4: { description: 'Understand assets, liabilities, and equity fundamentals.', progress: 25, coverIcon: '📈' }
+  };
+  const chapterMeta = {
+    ch1: { description: 'Foundations of front‑end development: HTML, CSS, and interactivity.', progress: 66, coverIcon: '🎨' },
+    ch2: { description: 'Server‑side JavaScript with Node.js and Express.', progress: 20, coverIcon: '⚙️' },
+    ch3: { description: 'Learn about arrays, linked lists, and big O notation.', progress: 30, coverIcon: '🔗' },
+    ch4: { description: 'Study Newton’s first law, inertia, and forces.', progress: 40, coverIcon: '🍎' },
+    ch5: { description: 'The accounting equation: assets = liabilities + equity.', progress: 20, coverIcon: '📘' }
+  };
+
+  // Recent subchapters
+  const recentSubchapters = learningData.subchapters.slice(0, 3).map(sc => {
+    const chapter = learningData.chapters.find(c => c.id === sc.chapterId);
+    const subject = learningData.subjects.find(s => s.id === chapter?.subjectId);
+    return { ...sc, chapterName: chapter?.name, subjectName: subject?.name };
+  });
+
+  // Helper: get all subchapters of a given chapter
+  function getPlaylistForChapter(chapterId) {
+    return learningData.subchapters.filter(sc => sc.chapterId === chapterId);
+  }
+
+  // Show video view with playlist sidebar (all subchapters of the same chapter)
+  function showVideoView(subchapter, chapterId) {
+    const chapter = learningData.chapters.find(c => c.id === chapterId);
+    const subject = learningData.subjects.find(s => s.id === chapter?.subjectId);
+    const playlist = getPlaylistForChapter(chapterId);
+    const currentIndex = playlist.findIndex(sc => sc.id === subchapter.id);
+
+    container.innerHTML = `
+      <div class="drill-header">
+        <button class="back-btn" id="back-to-subchapters">← Back to chapter resources</button>
+        <h2>${chapter?.name || 'Chapter'} – ${subchapter.title}</h2>
+      </div>
+      <div class="video-layout">
+        <div class="player-section">
+          <div class="player-placeholder">
+            ${subchapter.type === 'video' && subchapter.url 
+              ? `<iframe src="${subchapter.url}" style="width:100%; height:100%; border:none;" allowfullscreen></iframe>`
+              : `<div style="display:flex; align-items:center; justify-content:center; height:100%; color:var(--color-text-muted);">Book resource – read offline</div>`
+            }
+          </div>
+          <div class="notes-box">
+            <label>Notes</label>
+            <textarea placeholder="Write your insights..."></textarea>
+          </div>
+        </div>
+        <div class="playlist-sidebar">
+          <h4>${chapter?.name || 'Chapter'} playlist</h4>
+          ${playlist.map((sc, idx) => `
+            <div class="playlist-item ${idx === currentIndex ? 'active' : ''}" data-subchapter='${JSON.stringify(sc)}'>
+              <div class="playlist-item-title">
+                ${idx + 1}. ${sc.title}
+              </div>
+              <div class="playlist-item-type">${sc.type === 'video' ? '🎬 Video' : '📘 Book'}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+    // Back button
+    document.getElementById('back-to-subchapters').onclick = () => showSubchaptersForChapter(chapterId);
+
+    // Playlist click handlers
+    document.querySelectorAll('.playlist-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const sc = JSON.parse(item.dataset.subchapter);
+        showVideoView(sc, chapterId);
+      });
+    });
+  }
+
+  // --------------------------------------------------------------
+  // Drill‑down functions (dashboard, skills, subjects, chapters, subchapters)
+  // --------------------------------------------------------------
+  function showJourneyDashboard() {
+    container.innerHTML = `
+      <div class="journey-header">
+        <h1>Your learning journey</h1>
+        <p>Master new skills, one chapter at a time.</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-title">Skills in progress</div>
+          <div class="stat-value">${learningData.skills.length}</div>
+          <div class="progress-bar"><div class="progress-fill" style="width: ${(skillDetails.s1.progress + skillDetails.s2.progress + skillDetails.s3.progress) / 3}%"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Subjects mastered</div>
+          <div class="stat-value">2</div>
+          <div class="stat-progress">out of ${learningData.subjects.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Learning streak</div>
+          <div class="stat-value">13</div>
+          <div class="stat-progress">days — keep it up 🔥</div>
+        </div>
+      </div>
+      <div style="margin-bottom: 0.5rem;"><strong>Continue where you left off</strong></div>
+      <div class="recent-list">
+        ${recentSubchapters.map(sc => `
+          <div class="recent-item" data-subchapter='${JSON.stringify(sc)}'>
+            <div class="recent-info"><strong>${sc.title}</strong><span>${sc.subjectName} · ${sc.chapterName}</span></div>
+            <button class="continue-btn">Resume</button>
+          </div>
+        `).join('')}
+      </div>
+      <div style="margin: 1.5rem 0 1rem 0;"><strong>Your skills</strong></div>
+      <div class="skill-row">
+        ${learningData.skills.map(skill => {
+          const d = skillDetails[skill.id];
+          return `
+            <div class="skill-card-horizontal" data-skill-id="${skill.id}">
+              <div class="skill-info">
+                <div class="skill-name">${d.name}</div>
+                <div class="skill-description">${d.description}</div>
+                <div class="skill-stats">${d.completed} of ${d.total} subchapters completed</div>
+              </div>
+              <div class="skill-progress-area">
+                <div class="progress-label"><span>Progress</span><span>${d.progress}%</span></div>
+                <div class="progress-bar"><div class="progress-fill" style="width: ${d.progress}%"></div></div>
+              </div>
+              <div class="skill-action"><button class="explore-btn">Explore →</button></div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <div class="goal-card">
+        <div class="goal-title">🎯 Weekly goal</div>
+        <div>Complete 5 learning modules this week</div>
+        <div class="progress-bar"><div class="progress-fill" style="width: 40%"></div></div>
+        <div class="goal-stats" style="font-size:0.8rem; margin-top:0.5rem;">2 of 5 completed · 3 days remaining</div>
+      </div>
+    `;
+
+    // Skill cards
+    document.querySelectorAll('.skill-card-horizontal').forEach(card => {
+      const skillId = card.dataset.skillId;
+      const open = () => showSubjectsForSkill(skillId);
+      card.addEventListener('click', open);
+      card.querySelector('.explore-btn')?.addEventListener('click', (e) => { e.stopPropagation(); open(); });
+    });
+    // Resume recent items
+    document.querySelectorAll('.recent-item').forEach(item => {
+      const sc = JSON.parse(item.dataset.subchapter);
+      item.querySelector('.continue-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (sc.type === 'video' && sc.url) showVideoView(sc, sc.chapterId);
+        else alert(`"${sc.title}" is a book resource. Read it in the library.`);
+      });
+    });
+  }
+
+  function showSubjectsForSkill(skillId) {
+    const skill = learningData.skills.find(s => s.id === skillId);
+    const subjects = learningData.subjects.filter(s => s.skillId === skillId);
+    container.innerHTML = `
+      <div class="drill-header">
+        <button class="back-btn" id="back-to-dashboard">← Back to dashboard</button>
+        <h2>${skill.name} – Subjects</h2>
+      </div>
+      <div class="large-card-grid">
+        ${subjects.map(sub => {
+          const meta = subjectMeta[sub.id] || { description: 'Explore this subject.', progress: 0, coverIcon: '📚' };
+          return `
+            <div class="subject-card" data-subject="${sub.id}">
+              <div class="card-cover">${meta.coverIcon}</div>
+              <div class="card-content">
+                <div class="card-title">${sub.name}</div>
+                <div class="card-description">${meta.description}</div>
+                <div class="card-progress">
+                  <div class="progress-label"><span>Progress</span><span>${meta.progress}%</span></div>
+                  <div class="progress-bar"><div class="progress-fill" style="width: ${meta.progress}%"></div></div>
+                </div>
+                <div class="card-action"><span class="action-link">View chapters →</span></div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>`;
+    document.getElementById('back-to-dashboard').onclick = showJourneyDashboard;
+    document.querySelectorAll('.subject-card').forEach(card => {
+      card.addEventListener('click', () => showChaptersForSubject(card.dataset.subject));
+    });
+  }
+
+  function showChaptersForSubject(subjectId) {
+    const sub = learningData.subjects.find(s => s.id === subjectId);
+    const chapters = learningData.chapters.filter(ch => ch.subjectId === subjectId);
+    container.innerHTML = `
+      <div class="drill-header">
+        <button class="back-btn" id="back-to-subjects">← Back</button>
+        <h2>${sub.name} – Chapters</h2>
+      </div>
+      <div class="large-card-grid">
+        ${chapters.map(ch => {
+          const meta = chapterMeta[ch.id] || { description: 'Dive into this chapter.', progress: 0, coverIcon: '📖' };
+          return `
+            <div class="chapter-card" data-chapter="${ch.id}">
+              <div class="card-cover">${meta.coverIcon}</div>
+              <div class="card-content">
+                <div class="card-title">${ch.name}</div>
+                <div class="card-description">${meta.description}</div>
+                <div class="card-progress">
+                  <div class="progress-label"><span>Progress</span><span>${meta.progress}%</span></div>
+                  <div class="progress-bar"><div class="progress-fill" style="width: ${meta.progress}%"></div></div>
+                </div>
+                <div class="card-action"><span class="action-link">Explore resources →</span></div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>`;
+    document.getElementById('back-to-subjects').onclick = () => {
+      const parentSkill = learningData.skills.find(skill => skill.id === sub.skillId);
+      if (parentSkill) showSubjectsForSkill(parentSkill.id);
+      else showJourneyDashboard();
+    };
+    document.querySelectorAll('.chapter-card').forEach(card => {
+      card.addEventListener('click', () => showSubchaptersForChapter(card.dataset.chapter));
+    });
+  }
+
+  function showSubchaptersForChapter(chapterId) {
+    const ch = learningData.chapters.find(c => c.id === chapterId);
+    const subchapters = learningData.subchapters.filter(sc => sc.chapterId === chapterId);
+    container.innerHTML = `
+      <div class="drill-header">
+        <button class="back-btn" id="back-to-chapters">← Back</button>
+        <h2>${ch.name} – Resources</h2>
+      </div>
+      <div class="subchapter-grid">
+        ${subchapters.map(sc => `
+          <div class="subchapter-card" data-subchapter='${JSON.stringify(sc)}'>
+            <div class="subchapter-cover">${sc.type === 'video' ? '🎬' : '📘'}</div>
+            <div class="subchapter-content">
+              <div class="subchapter-type">${sc.type === 'video' ? 'Video lesson' : 'Reading material'}</div>
+              <div class="subchapter-title">${sc.title}</div>
+              <div class="card-action" style="margin-top:0.5rem;"><span class="action-link">${sc.type === 'video' ? 'Watch now →' : 'Read now →'}</span></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+    document.getElementById('back-to-chapters').onclick = () => {
+      const parentSubject = learningData.subjects.find(s => s.id === ch.subjectId);
+      if (parentSubject) showChaptersForSubject(parentSubject.id);
+      else showJourneyDashboard();
+    };
+    document.querySelectorAll('.subchapter-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const sc = JSON.parse(card.dataset.subchapter);
+        if (sc.type === 'video' && sc.url) showVideoView(sc, chapterId);
+        else alert(`"${sc.title}" is a book resource. You can read it in the library.`);
+      });
+    });
+  }
+
+  // Start
+  showJourneyDashboard();
+</script>
+</body>
+</html>

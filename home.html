@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arcana – Home</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <nav class="top-nav">
+    <div class="logo">Arcana</div>
+    <div class="nav-links">
+      <a href="home.html" class="nav-link active">Home</a>
+      <a href="projects.html" class="nav-link">Projects</a>
+      <a href="tasks.html" class="nav-link">Tasks</a>
+      <a href="calendar.html" class="nav-link">Calendar</a>
+      <a href="learning.html" class="nav-link">Learning</a>
+      <a href="library.html" class="nav-link">Library</a>
+    </div>
+  </nav>
+  <main class="main-content">
+    <h1 style="font-weight:600;">Good morning, Alex.</h1>
+    <p style="color:var(--color-text-secondary); margin-bottom:1.8rem;"><span id="current-date"></span> — focus forward</p>
+    <div class="dashboard-grid">
+      <div class="widget"><div class="widget-header"><span class="widget-title">Today’s focus</span><a href="tasks.html" class="view-all">View all</a></div><div id="today-tasks"></div></div>
+      <div class="widget"><div class="widget-header"><span class="widget-title">Current project</span></div><h3>Website Redesign</h3><p style="font-size:0.85rem; color:var(--color-text-secondary);" id="project-task-count">3 active tasks</p><div class="progress-bar"><div class="progress-fill" style="width:35%"></div></div></div>
+      <div class="widget"><div class="widget-header"><span class="widget-title">Upcoming events</span><a href="calendar.html" class="view-all">View all</a></div><div id="upcoming-events"></div></div>
+      <div class="widget"><div class="widget-header"><span class="widget-title">Continue reading</span></div><div id="continue-reading"></div></div>
+      <div class="widget"><div class="widget-header"><span class="widget-title">Learning path</span></div><div id="learning-progress-widget"></div></div>
+    </div>
+  </main>
+</div>
+<script src="js/data.js"></script>
+<script>
+  // ========== REPLACE THIS WITH YOUR ACTUAL API URL ==========
+  const API_URL = 'https://script.google.com/macros/s/AKfycbyBIhy8vZYt8PtmIvToJfcZGbeL0vTEdwi3SkLD2p-H5UmVgmRAoFUjE9QUogI44Setaw/exec';  // e.g. 'https://script.google.com/macros/s/.../exec'
+  // ============================================================
+
+  let tasks = [];
+
+  async function fetchTasks() {
+    const res = await fetch(`${API_URL}?type=tasks`);
+    tasks = await res.json();
+    renderHomeWidgets();
+  }
+
+  async function updateTask(id, updates) {
+    await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'updateTask', type: 'tasks', data: { id, ...updates } })
+    });
+    await fetchTasks();
+  }
+
+  async function deleteTask(id) {
+    await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteTask', type: 'tasks', data: { id } })
+    });
+    await fetchTasks();
+  }
+
+  function renderHomeWidgets() {
+    const todayTasks = tasks.slice(0,3);
+    document.getElementById('today-tasks').innerHTML = todayTasks.map(t => `
+      <div class="task-item" data-task-id="${t.id}">
+        <input type="checkbox" class="task-checkbox" ${t.completed ? 'checked' : ''}>
+        <span class="task-text ${t.completed ? 'done' : ''}">${t.title}</span>
+        <span class="priority-${t.priority.toLowerCase()}">${t.priority}</span>
+        <button class="delete-task-btn" style="background:none; border:none; cursor:pointer; color:var(--color-danger); margin-left:auto;">🗑️</button>
+      </div>
+    `).join('');
+    // Checkbox toggle
+    document.querySelectorAll('#today-tasks .task-checkbox').forEach(cb => {
+      cb.addEventListener('change', async (e) => {
+        const taskDiv = e.target.closest('.task-item');
+        const taskId = taskDiv.dataset.taskId;
+        const completed = e.target.checked;
+        await updateTask(taskId, { completed });
+      });
+    });
+    // Delete button
+    document.querySelectorAll('#today-tasks .delete-task-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const taskDiv = e.target.closest('.task-item');
+        const taskId = taskDiv.dataset.taskId;
+        await deleteTask(taskId);
+      });
+    });
+    // Upcoming events (hardcoded for now, but could fetch from API)
+    document.getElementById('upcoming-events').innerHTML = '<div class="task-item">Team standup — 2026-06-06</div><div class="task-item">Dentist appointment — 2026-06-08</div>';
+    // Reading (static)
+    document.getElementById('continue-reading').innerHTML = '<div><strong>Eloquent JavaScript</strong><br><span style="font-size:0.8rem;">Marijn Haverbeke</span></div>';
+    document.getElementById('learning-progress-widget').innerHTML = `<p><strong>Coding</strong> · 2 chapters completed</p><div class="progress-bar"><div class="progress-fill" style="width:40%"></div></div>`;
+    document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+  }
+
+  fetchTasks();
+</script>
+</body>
+</html>
