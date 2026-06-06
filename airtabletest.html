@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head><title>Airtable Test</title></head>
+<body>
+<pre id="result">Testing...</pre>
+<script>
+  const AIRTABLE_API_KEY = 'pat3c3gEAV8OVrtQR';
+  const AIRTABLE_BASE_ID = 'apprEJdW35ZK7yast';
+  const TABLE = 'Tasks';
+
+  fetch(`https://api.airtable.com/v0/${BASE_ID}/${TABLE}`, {
+    headers: { Authorization: `Bearer ${API_KEY}` }
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById('result').innerText = JSON.stringify(data, null, 2);
+  })
+  .catch(err => {
+    document.getElementById('result').innerText = 'Error: ' + err.message;
+  });
+</script>
+</body>
+</html>
